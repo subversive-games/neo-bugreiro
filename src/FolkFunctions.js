@@ -44,11 +44,9 @@ function ChangeFolkState(folk, direction) {
 
 function PreventFolkToGoToEnemy(folk, dir) {
 
-    var enemy;
+    var enemy = Environment.player;
 
-    if (Environment.fascistMode === true) {
-        enemy = Environment.player;
-    } else {
+    if (Environment.fascistMode === false) {
         enemy = Environment.ai;
     }
 
