@@ -20,11 +20,12 @@ function ShootEffect() {
 
     this.setup = function (pos, direction) {
 
+        var scale;
         switch (direction) {
             case 0:
             case 1:
                 {
-                    var scale = (direction === 1) ? 1 : -1;
+                    scale = (direction === 1) ? -1 : 1;
                     anim.animation = 'shoot_effect_side';
                     this.x = pos.x + 15 * scale;
                     this.y = pos.y;
@@ -36,7 +37,7 @@ function ShootEffect() {
             case 3:
                 {
                     anim.animation = 'shoot_effect_updown';
-                    var scale = (direction === 2) ? 1 : 0;
+                    scale = (direction === 2) ? 1 : 0;
                     this.x = pos.x + 4 * scale;
                     this.y = pos.y + 8 * -scale;
                     this.scale.x = 1;

@@ -1,142 +1,16 @@
-function CheckMapCollision(x, y) {
-
-    if (y < 0)
-        return true;
-
-    if (x < 0)
-        return false;
-
-    if (x >= Environment.map.width || y >= Environment.map.height)
-        return true;
-
-    var tile = Environment.map.layers[1].getTile(x, y);
-
-    if (tile === null)
-        return true;
-
-    return tile.data.properties.colliadable;
-}
-
-function CollidesWithFolk(x, y, considerMovement) {
-
-    if (considerMovement === undefined) considerMovement = true;
-    var folk;
-    var i = 0;
-    for (; i < Environment.folks.length; i++) {
-       // var test = true;
-        folk = Environment.folks[i];
-       /* if (id !== undefined) {
-            test = folk.dead === tru;
-        }*/
-        if (folk.dead === true)
-            continue;
-
-        if (folk.tile.x === x && folk.tile.y === y) {
-            return folk;
-        } else if (considerMovement === true && folk.isMoving === true) {
-            if (folk.toTile.x === x && folk.toTile.y === y) {
-                return folk;
-            } else if (folk.oldTile.x === x && folk.oldTile.y === y) {
-                return folk;
-            }
-        }
-    }
-
-    return null;
-}
-
-function CheckFolkCollision(x, y, id) {
-    var test = true;
-    var folk;
-    var i = 0;
-    for (; i < Environment.folks.length; i++) {
-        test = true;
-        folk = Environment.folks[i];
-        if (id !== undefined) {
-            test = !(folk.id === id || folk.dead === true); // !(folk.id === id || folk.dead === true);
-        }
-        if (test === false)
-            continue;
-
-        if (folk.tile.x === x && folk.tile.y === y) {
-            return folk;
-        } else if (folk.oldTile.x === x && folk.oldTile.y === y) {
-            return folk;
-        } else { // else if (folk.isMoving === true) {
-            if (folk.toTile.x === x && folk.toTile.y === y) {
-                return folk;
-            }
-            /*} else if (folk.tile.x === from.x && folk.tile.y === from.y) {
-                return folk;
-            }*/
-        }
-    }
-
-    return null;
-}
-
-
-function CheckDirectionalCollision(tile, folkID, tileDir) {
-
-
-
-    // right
-    tileDir[0] = !CheckMapCollision(tile.x + 1, tile.y) &&
-        !CheckFolkCollision(tile.x + 1, tile.y, folkID) &&
-        !CollideWithPlayer(tile.x + 1, tile.y);
-
-    // left
-    tileDir[1] = !CheckMapCollision(tile.x - 1, tile.y) &&
-        !CheckFolkCollision(tile.x - 1, tile.y, folkID) &&
-        !CollideWithPlayer(tile.x - 1, tile.y);
-    // up
-    tileDir[2] = !CheckMapCollision(tile.x, tile.y - 1) &&
-        !CheckFolkCollision(tile.x, tile.y - 1, folkID) &&
-        !CollideWithPlayer(tile.x, tile.y - 1);
-    // down
-    tileDir[3] = !CheckMapCollision(tile.x, tile.y + 1) &&
-        !CheckFolkCollision(tile.x, tile.y + 1, folkID) &&
-        !CollideWithPlayer(tile.x, tile.y + 1);
-
-    // can move in all directions?
-    //tileDir[4] = (tileDir[0] && tileDir[1] && tileDir[2] && tileDir[3]);
-    // can move?
-    tileDir[4] = !(tileDir[0] || tileDir[1] || tileDir[2] || tileDir[3]);
-}
-
-function CollideWithPlayer(x, y) {
-
-    if (Environment.player.tile.x == x && Environment.player.tile.y == y)
-        return true;
-    else if (Environment.player.oldTile.x == x && Environment.player.oldTile.y == y) {
-        return true;
-    } else// if (Environment.player.isMoving) {
-        if (Environment.player.toTile.x == x && Environment.player.toTile.y == y) {
-            return true;
-        }
-    //}
-
-    return false;
-}
-
-function CollideWith(a, b) {
-
-    if (a.tile.x == b.tile.x && a.tile.y == b.tile.y)
-        return true;
-    else if (a.toTile.x == b.toTile.x && a.toTile.y == b.toTile.y)
-        return true;
-    else if (a.toTile.x == b.tile.x && a.toTile.y == b.tile.y)
-        return true;
-    else if (b.toTile.x == a.tile.x && b.toTile.y == a.tile.y)
-        return true;
-
-    return false;
-}
-
 function SetToTile(entity, tileX, tileY) {
     entity.position.set(
         scintilla.Math.round(tileX * 16) + (entity.origin.x * 16),
         scintilla.Math.round(tileY * 16) + (entity.origin.y * 16));
+}
+
+function SetToRoundedTile(entity, tileX, tileY) {
+
+    if (entity.tile !== undefined) {
+        entity.tile.x = tileX;
+        entity.tile.y = tileY;
+    }
+    entity.position.set(tileX * 16 + 8, tileY * 16 + 8);
 }
 
 function GetEntityTile(entity) {
@@ -153,37 +27,43 @@ function GetTile(xworld, yworld) {
     };
 }
 
+function GetFlooredTile(xworld, yworld) {
+    return {
+        x: Math.floor(xworld / 16),
+        y: Math.floor(yworld / 16)
+    };
+}
+
 function WorldToTile(xworld, yworld, tile) {
     tile.x = Math.round(xworld / 16);
     tile.y = Math.round(yworld / 16);
 }
 
+function WorldToFlooredTile(xworld, yworld, tile) {
+    tile.x = Math.floor(xworld / 16);
+    tile.y = Math.floor(yworld / 16);
+}
+
 function RoundToTile(entity) {
 
-    SetToTile(entity,
-        (entity.x - (entity.origin.x * 16)) / 16,
-        (entity.y - (entity.origin.y * 16)) / 16
-    );
-}
-
-function CameraFollowPlayer(camera, player) {
-
-    var camX = player.x - 144;
-    if (camX <= 0) {
-        camX = 0;
+    var x = Math.round((entity.x - 8) / 16);
+    var y = Math.round((entity.y - 8) / 16);
+    entity.position.set(x * 16 + 8, y * 16 + 8);
+    if (entity.tile !== undefined) {
+        entity.tile.x = x;
+        entity.tile.y = y;
     }
-    camera.x = camX;
+
 }
-
-
 
 function CreateTiledEntity(entity, spd) {
     entity.spd = spd || 25;
-    entity.spdDuration = 16 / spd;
+    entity.spdDuration = (16 / spd);
     entity.moveTimer = 0;
     entity.isMoving = false;
     entity.hspd = 0;
     entity.vspd = 0;
+    entity.dir = 0;
     entity.oldPos = {
         x: 0,
         y: 0
@@ -210,12 +90,15 @@ function ActiveTileMovement(entity, horizontal, vertical) {
     entity.moveTimer = 0;
     entity.oldPos.x = entity.x;
     entity.oldPos.y = entity.y;
+    entity.oldTile.x = entity.tile.x;
+    entity.oldTile.y = entity.tile.y;
     entity.toTile.x = entity.oldTile.x + horizontal;
     entity.toTile.y = entity.oldTile.y + vertical;
+    entity.beingSmart = false;
 }
 
-function TileMovement(entity, dt) {
-    entity.moveTimer += dt / entity.spdDuration;
+function TileMovement(entity, dt, moveDuration) {
+    entity.moveTimer += dt / moveDuration;
     if (entity.moveTimer >= 1) {
         entity.isMoving = false;
         entity.moveTimer = 1;
@@ -229,77 +112,179 @@ function TileMovement(entity, dt) {
         entity.y = scintilla.Math.lerp(entity.oldPos.y, entity.destPos.y, entity.moveTimer);
     }
 
-    WorldToTile(entity.x - 8, entity.y - 8, entity.tile);
+    WorldToFlooredTile(entity.x, entity.y, entity.tile);
+
+    if (entity.moveTimer >= 0.5) {
+        entity.oldTile.x = entity.tile.x;
+        entity.oldTile.y = entity.tile.y;
+    }
 
     if (!entity.isMoving) {
         entity.x = entity.destPos.x;
         entity.y = entity.destPos.y;
         RoundToTile(entity);
+        entity.oldTile.x = entity.tile.x;
+        entity.oldTile.y = entity.tile.y;
+
     }
 }
 
-function GetNearestSafePoint(from) {
-    return {x:0,y:0};
-    /*var closeDistx = Infinity, closeDisty = Infinity;
-    var dist;
-    var point;
-    var closestPoint = null;
-    for (var i = 0; i < Environment.safePoints.length; i++) {
 
-        point = Environment.safePoints[i];
-        dist = scintilla.Math.manhattan(from.x, from.y, point.x, point.y);
-        if (dist.x < closeDistx && dist.y < closeDisty) {
-            closeDistx = dist.x;
-            closeDisty = dist.y;
-            closestPoint = point;
-        }
-    }
-    return (closestPoint !== null) ? GetTile(closestPoint.x, closestPoint.y) : null;
-    */
-}
-
-function PathFindCollisionTest(pos, obj) {
-
-    return !CheckMapCollision(pos.x, pos.y); // ||
-        //CheckFolkCollision(pos.x, pos.y, obj.id) ||
-        //CollideWithPlayer(pos.x, pos.y);
-
-}
 
 function ActivePathNodeMovement(entity, node) {
 
     var dir = 0;
-    entity.toTile.x = node.position.x;
-    entity.toTile.y = node.position.x;
+    entity.oldTile.x = entity.tile.x;
+    entity.oldTile.y = entity.tile.y;
+    entity.toTile.x = node.x;
+    entity.toTile.y = node.x;
     entity.oldPos.x = entity.x;
     entity.oldPos.y = entity.y;
 
-    entity.hspd = node.position.x - entity.tile.x;
-    entity.vspd = node.position.y - entity.tile.y;
+    entity.hspd = node.x - entity.tile.x;
+    entity.vspd = node.y - entity.tile.y;
 
     if (entity.hspd !== 0) {
         entity.vspd = 0;
-        dir = entity.hspd;
+        dir = (entity.hspd === -1) ? 1 : 0;
     } else if (entity.vspd !== 0) {
         entity.hspd = 0;
-        dir = (entity.vspd === 1) ? 2 : 3;
+        dir = (entity.vspd === 1) ? 3 : 2;
     }
 
-    entity.destPos.x = Math.round(node.position.x * 16 + 8);
-    entity.destPos.y = Math.round(node.position.y * 16 + 8);
+    entity.destPos.x = Math.round(node.x * 16 + 8);
+    entity.destPos.y = Math.round(node.y * 16 + 8);
     entity.isMoving = true;
     entity.beingSmart = true;
     entity.moveTimer = 0;
+
     return dir;
 
 }
 
-function ValidatePathNode() {
+function FolkTileMovementThroughPathNode(node, entity, dt, moveDuration) {
+
+    entity.moveTimer += dt / moveDuration;
+
+    if (entity.moveTimer >= 1) {
+        entity.moveTimer = 1;
+        entity.isMoving = false;
+    }
+
+    if (entity.hspd !== 0) {
+        entity.x = scintilla.Math.lerp(entity.oldPos.x, entity.destPos.x, entity.moveTimer);
+    }
+    if (entity.vspd !== 0) {
+        entity.y = scintilla.Math.lerp(entity.oldPos.y, entity.destPos.y, entity.moveTimer);
+    }
+
+    WorldToFlooredTile(entity.x - 8, entity.y - 8, entity.tile);
+
+    if (entity.moveTimer >= 0.5) {
+        entity.oldTile.x = entity.tile.x;
+        entity.oldTile.y = entity.tile.y;
+    }
+
+    if (entity.isMoving === false) {
+
+
+        entity.x = entity.destPos.x;
+        entity.y = entity.destPos.y;
+        RoundToTile(entity);
+        entity.navigation++;
+
+        var len = node.length;
+
+        if (entity.navigation < len) {
+
+            var next = node[entity.navigation];
+
+            entity.tile.x = node[entity.navigation - 1].x;
+            entity.tile.y = node[entity.navigation - 1].y;
+            var dir;
+            // is near to the safe point?
+            if (entity.navigation >= len - 2) {
+
+
+                // if yes, we can avoid to reach to the center of safe point
+                if (FolkPathFindCollisionTest(next.x, next.y, this)) {
+                    node = null;
+                    entity.navigation = 0;
+                } else {
+                    dir = ActivePathNodeMovement(entity, next);
+                    ChangeFolkState(entity, dir);
+                }
+
+            } else {
+
+                if (!FolkPathFindCollisionTest(next.x, next.y, this)) {
+                    dir = ActivePathNodeMovement(entity, next);
+                    ChangeFolkState(entity, dir);
+                } else {
+                    node = null;
+                    entity.navigation = 0;
+                }
+            }
+
+
+        } else {
+            node = null;
+            entity.navigation = 0;
+        }
+    }
+}
+
+function TileTrace(fromTile, move_x, move_y, max) {
+
+    var i = 0;
+    var xtest = fromTile.x;
+    var ytest = fromTile.y;
+    for (; i < max; i++) {
+
+        if (CheckMapCollision(xtest, ytest) === false) {
+            break;
+        }
+
+        xtest += move_x;
+        ytest += move_y;
+
+    }
+
+    return {
+        x: xtest,
+        y: ytest
+    };
+}
+
+
+function TraceToTarget(fromTile, target, move_x, move_y, max) {
+
+    var i = 0;
+    var xtest = fromTile.x;
+    var ytest = fromTile.y;
+    for (; i < max; i++) {
+
+        xtest += move_x;
+        ytest += move_y;
+
+        if (CheckMapCollision(xtest, ytest)) {
+            return false;
+        } else {
+
+            if (xtest === target.tile.x && ytest === target.tile.y) {
+                return true;
+            } else if (xtest === target.toTile.x && ytest === target.toTile.y) {
+                return true;
+            }
+        }
+
+    }
+
+    return false;
 
 }
 
 function TileMovementThroughPathNode(node, entity, dt) {
-
     entity.moveTimer += dt / entity.spdDuration;
 
     if (entity.moveTimer >= 1) {
@@ -307,28 +292,47 @@ function TileMovementThroughPathNode(node, entity, dt) {
         entity.isMoving = false;
     }
 
-
     if (entity.hspd !== 0) {
         entity.x = scintilla.Math.lerp(entity.oldPos.x, entity.destPos.x, entity.moveTimer);
     }
-
     if (entity.vspd !== 0) {
         entity.y = scintilla.Math.lerp(entity.oldPos.y, entity.destPos.y, entity.moveTimer);
     }
 
-    WorldToTile(entity.x - 8, entity.y - 8, entity.tile);
+    WorldToFlooredTile(entity.x - 8, entity.y - 8, entity.tile);
+
+    if (entity.moveTimer >= 0.5) {
+        entity.oldTile.x = entity.tile.x;
+        entity.oldTile.y = entity.tile.y;
+    }
 
     if (entity.isMoving === false) {
-        var parent = node.parent;
-        if (parent !== null) {
-            var dir = ActivePathNodeMovement(entity, parent);
-            node = node.parent;
-            ChangeFolkState(entity, dir);
-        } else {
-            node = null;
-            entity.x = entity.destPos.x;
-            entity.y = entity.destPos.y;
-            RoundToTile(entity);
+
+
+        entity.x = entity.destPos.x;
+        entity.y = entity.destPos.y;
+        RoundToTile(entity);
+        entity.navigation++;
+
+        var len = node.length;
+
+        if (entity.navigation < len) {
+
+            var next = node[entity.navigation];
+
+            entity.tile.x = node[entity.navigation - 1].x;
+            entity.tile.y = node[entity.navigation - 1].y;
+
+            //if (!FolkPlayerCollisionTest(next.x, next.y, this)) {
+                var dir = ActivePathNodeMovement(entity, next);
+                entity.ChangeState(dir);
+                return;
+            //}
         }
+
+        node = null;
+        //entity.navigation = 0;
     }
+
+   
 }

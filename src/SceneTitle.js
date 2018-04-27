@@ -10,12 +10,37 @@ function SceneTitle() {
     var bugPosY = 57 + 24.5
     var it = 1;
     var optionsMenu = false;
-    var optionsSelect = 0;
+    var optionsSelect = false;
     var startGame = 0;
     var bgm = null;
+    var waitForFade = false;
 
     this.start = function () {
+
+        optionsMenu = false;
+        optionsSelect = false;
+        startGame = 0;
+        bgm = null;
+        this.blinkStartTime = 0;
+        this.blinkStart = false;
+
         this.transition.out();
+        waitForFade = true;
+
+        this.events.subscribeOnce('transition_end',
+            function () {
+                waitForFade = false;
+            }, this);
+
+        bgm = this.audio.get('bgm');
+
+        if (bgm !== null) {
+            if (!bgm.isPlaying) {
+                bgm.play();
+            }
+        } else {
+            bgm = this.audio.playPersistent('titleMusic', 0.3, true, 'bgm');
+        }
     };
 
     this.update = function (dt) {
@@ -25,15 +50,18 @@ function SceneTitle() {
             var confirmKey = this.key.pressed(scintilla.KeyCode.Enter) || this.key.pressed(scintilla.KeyCode.Space);
 
             if (!optionsMenu) {
+
                 this.blinkStartTime += dt;
 
                 if (this.blinkStartTime >= 0.5) {
                     this.blinkStart = !this.blinkStart;
                     this.blinkStartTime = 0;
                 }
-                if (confirmKey) {
-                    optionsMenu = true;
-                    this.audio.playOnce('ok', 0.5);
+                if (waitForFade === false) {
+                    if (confirmKey) {
+                        optionsMenu = true;
+                        this.audio.playOnce('ok', 0.5);
+                    }
                 }
             } else {
 
@@ -48,13 +76,14 @@ function SceneTitle() {
                     this.transition.in();
                     this.audio.playOnce('ok', 0.5);
                     this.blinkStartTime = 0;
-                    bgm = this.audio.at(0);
+                    AntifaControl.fascistMode = optionsSelect;
                     this.events.subscribeOnce('transition_end', function () {
                         startGame = 2;
                     });
                     startGame = 1;
                 }
             }
+
 
         } else {
 
@@ -69,12 +98,14 @@ function SceneTitle() {
 
                 bgm.volume = scintilla.Math.lerp(0.3, 0, tVolume);
 
+
                 if (this.blinkStartTime >= 2) {
                     this.audio.stopAll(true);
                     this.scene.set('game');
                 }
             }
         }
+
 
         angt += (dt / 6.0);
 
@@ -133,17 +164,20 @@ function SceneTitle() {
             drawer.align = 'left';
         } else {
             drawer.align = 'center';
-            drawer.text('FAIR EXCHANGE?', 160, 148);
+            drawer.text('FAIR TRADE?', 160, 148);
             drawer.align = 'left';
+            var xx = 156 - 4; // 148
             //var unicode = eval('"\\u' + 2192 + '"'); //String.fromCharCode("8594");
-            drawer.text(">", 148 - 16, 148 + 16 + (optionsSelect * 12));
-            drawer.text('YES', 148, 148 + 16);
-            drawer.text('NO', 148, 148 + 16 + 12);
+            //drawer.text(">", 148 - 16, 148 + 16 + (((optionsSelect) ? 1 : 0) * 12));
+            drawer.spritePart('effects', xx - 16, 148 + 8 + (((optionsSelect) ? 1 : 0) * 12), 96, 24, 8, 8);
+            drawer.text('YES', xx, 148 + 16);
+            drawer.text('NO', xx, 148 + 16 + 12);
         }
 
         drawer.text('TOBIASBU', 8, 232);
-        drawer.text('MUSIC BY 505', 8, 232 - 10);
+
         drawer.align = 'right';
-        drawer.text('2018', 320 - 8, 232);
+        drawer.text('MUSIC BY NILS FESKE', 320 - 8, 232);
+        //drawer.text('2018', 320 - 8, 232);
     };
 }
